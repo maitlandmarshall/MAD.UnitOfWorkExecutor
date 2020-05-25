@@ -6,7 +6,7 @@ namespace MAD.UnitOfWorkExecutor.TestApp
     {
         static void Main(string[] args)
         {
-            new UOWExe().Start().Wait();
+            new UnitOfWorkExecutorBuilder().Build().Run().Wait();
         }
     }
 }

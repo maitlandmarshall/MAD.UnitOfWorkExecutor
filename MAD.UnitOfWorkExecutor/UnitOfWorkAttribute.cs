@@ -7,16 +7,25 @@ namespace MAD.UnitOfWorkExecutor
     [AttributeUsage(AttributeTargets.Method, AllowMultiple = false)]
     public class UnitOfWorkAttribute : Attribute
     {
-        public UnitOfWorkType WorkType { get; set; } = UnitOfWorkType.Timed;
+        internal UnitOfWorkType WorkType
+        {
+            get
+            {
+                if (string.IsNullOrEmpty(this.RunAtTime))
+                    return UnitOfWorkType.Timed;
+
+                return UnitOfWorkType.Scheduled;
+            }
+        }
 
         // Timed
         public int RunEverySeconds { get; set; } = 5;
 
         // Scheduled
-        public DayOfWeek RunDays { get; set; }
-        public int RunHour { get; set; }
-        public int RunMinute { get; set; }
-        public int RunSecond { get; set; }
+        /// <summary>
+        /// In the format of hh:mm i.e 22:30 for 10:30 PM.
+        /// </summary>
+        public string RunAtTime { get; set; }
 
     }
 }

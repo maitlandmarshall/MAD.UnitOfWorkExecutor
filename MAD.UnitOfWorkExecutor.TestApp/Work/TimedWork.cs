@@ -7,7 +7,7 @@ namespace MAD.UnitOfWorkExecutor.TestApp.Work
 {
     public class TimedWork
     {
-        [UnitOfWork(RunEverySeconds = 1)]
+        [UnitOfWork(RunAtTime = "11:51")]
         public async Task EveryMinute()
         {
             Console.WriteLine("YUOOO");

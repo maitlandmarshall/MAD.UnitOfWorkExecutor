@@ -1,4 +1,4 @@
-using MAD.UnitOfWorkExecutor.Primer;
+using MAD.UnitOfWorkExecutor.Execution;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace MAD.UnitOfWorkExecutor.Tests

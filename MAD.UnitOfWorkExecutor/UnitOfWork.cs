@@ -1,8 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Reflection;
-using System.Runtime.Serialization;
-using System.Text;
 
 namespace MAD.UnitOfWorkExecutor
 {
@@ -11,17 +9,19 @@ namespace MAD.UnitOfWorkExecutor
         public readonly MethodInfo MethodInfo;
         public readonly UnitOfWorkAttribute Attribute;
 
+        public DateTime? LastRunDateTime { get; set; }
+
         public UnitOfWork(MethodInfo ownerMethodInfo, IDictionary<string, object> attributeData)
         {
             this.MethodInfo = ownerMethodInfo;
             this.Attribute = new UnitOfWorkAttribute();
 
-            foreach (var kvp in attributeData)
+            foreach (KeyValuePair<string, object> kvp in attributeData)
             {
                 typeof(UnitOfWorkAttribute)
                     .GetProperty(kvp.Key)
                     ?.SetValue(this.Attribute, kvp.Value);
             }
         }
-    }   
+    }
 }

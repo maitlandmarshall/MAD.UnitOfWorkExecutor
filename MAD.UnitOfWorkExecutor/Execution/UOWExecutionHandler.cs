@@ -1,4 +1,4 @@
-﻿using MAD.UnitOfWorkExecutor.Primer;
+﻿using MAD.UnitOfWorkExecutor.Execution;
 using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Collections.Generic;
@@ -31,10 +31,6 @@ namespace MAD.UnitOfWorkExecutor.Execution
 
                 if (result is Task task)
                     await task;
-
-            }
-            catch (Exception)
-            {
 
             }
             finally

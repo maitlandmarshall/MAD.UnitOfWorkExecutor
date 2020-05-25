@@ -4,7 +4,7 @@ using Autofac.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection;
 using System;
 
-namespace MAD.UnitOfWorkExecutor.Primer
+namespace MAD.UnitOfWorkExecutor.Execution
 {
     internal class UOWDependencyInjectionScopePrimer
     {

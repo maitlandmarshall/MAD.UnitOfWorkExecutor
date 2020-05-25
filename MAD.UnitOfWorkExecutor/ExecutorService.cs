@@ -1,25 +1,26 @@
 ﻿using MAD.UnitOfWorkExecutor.Execution;
-using MAD.UnitOfWorkExecutor.Primer;
+using MAD.UnitOfWorkExecutor.Schedule;
+using System;
 using System.Collections.Generic;
 using System.Reflection;
-using System.Threading;
 using System.Threading.Tasks;
+using System.Timers;
 
 namespace MAD.UnitOfWorkExecutor
 {
     internal sealed class ExecutorService
     {
         private readonly UOWFromAssemblyPrimer unitOfWorkFromAssemblyPrimer;
-        private readonly UOWTimerPrimer unitOfWorkTimerPrimer;
         private readonly UOWExecutionHandler executionHandler;
-        private readonly IDictionary<UnitOfWork, Timer> unitOfWorkTimers;
+        private readonly UOWScheduleFactory scheduleFactory;
+        private readonly IDictionary<Timer, UnitOfWork> unitOfWorkTimers;
 
-        public ExecutorService(UOWFromAssemblyPrimer unitOfWorkFromAssemblyPrimer, UOWTimerPrimer unitOfWorkTimerPrimer, UOWExecutionHandler executionHandler)
+        public ExecutorService(UOWFromAssemblyPrimer unitOfWorkFromAssemblyPrimer, UOWExecutionHandler executionHandler, UOWScheduleFactory scheduleFactory)
         {
             this.unitOfWorkFromAssemblyPrimer = unitOfWorkFromAssemblyPrimer;
-            this.unitOfWorkTimerPrimer = unitOfWorkTimerPrimer;
             this.executionHandler = executionHandler;
-            this.unitOfWorkTimers = new Dictionary<UnitOfWork, Timer>();
+            this.scheduleFactory = scheduleFactory;
+            this.unitOfWorkTimers = new Dictionary<Timer, UnitOfWork>();
         }
 
         public async Task Start()
@@ -28,26 +29,43 @@ namespace MAD.UnitOfWorkExecutor
 
             foreach (UnitOfWork uow in unitOfWorks)
             {
-                this.unitOfWorkTimers.Add(
-                    key: uow,
-                    value: this.unitOfWorkTimerPrimer.Prime(uow, this.OnTimerCallback)
-                );
+                this.StartAndTrackTimerForUnitOfWork(uow);
             }
         }
 
-        private async void OnTimerCallback(object state)
+        private Timer StartAndTrackTimerForUnitOfWork(UnitOfWork unitOfWork)
         {
-            if (Monitor.IsEntered(state))
-                return;
+            UOWSchedule schedule = this.scheduleFactory.Create(unitOfWork);
+
+            Timer timer = new Timer(Math.Max(schedule.NextDue.TotalMilliseconds, 1))
+            {
+                AutoReset = false
+            };
+            timer.Elapsed += this.Timer_Elapsed;
+
+            this.unitOfWorkTimers.Add(timer, unitOfWork);
+
+            timer.Start();
+
+            return timer;
+        }
+
+        private async void Timer_Elapsed(object sender, ElapsedEventArgs e)
+        {
+            Timer timer = sender as Timer;
+            UnitOfWork unitOfWork = this.unitOfWorkTimers[timer];
+
+            timer.Dispose();
+            this.unitOfWorkTimers.Remove(timer);
 
             try
             {
-                Monitor.Enter(state);
-                await this.executionHandler.Handle(state as UnitOfWork);
+                await this.executionHandler.Handle(unitOfWork);
             }
             finally
             {
-                Monitor.Exit(state);
+                unitOfWork.LastRunDateTime = DateTime.Now;
+                this.StartAndTrackTimerForUnitOfWork(unitOfWork);
             }
         }
     }

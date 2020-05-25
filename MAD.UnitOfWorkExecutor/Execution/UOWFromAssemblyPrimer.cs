@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 
-namespace MAD.UnitOfWorkExecutor.Primer
+namespace MAD.UnitOfWorkExecutor.Execution
 {
     internal class UOWFromAssemblyPrimer
     {
