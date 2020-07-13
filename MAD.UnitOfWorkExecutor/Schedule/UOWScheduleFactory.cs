@@ -9,18 +9,21 @@ namespace MAD.UnitOfWorkExecutor.Schedule
     {
         public UOWSchedule Create(UnitOfWork uow)
         {
-            DateTime now = DateTime.Now;
             TimeSpan nextDue;
 
             if (uow.LastRunDateTime.HasValue)
             {
+                DateTime lastDone = uow.LastRunDateTime.Value;
+
                 switch (uow.Attribute.WorkType)
                 {
                     case UnitOfWorkType.Scheduled:
                         TimeSpan timeScheduled = TimeSpan.ParseExact(uow.Attribute.RunAtTime, "hh\\:mm", CultureInfo.InvariantCulture);
-                        DateTime nextDueDateTime = new DateTime(now.Year, now.Month, now.Day).AddDays(1).AddSeconds(timeScheduled.TotalSeconds);
+                        DateTime nextDueDateTime = new DateTime(lastDone.Year, lastDone.Month, lastDone.Day)
+                            .AddDays(1)
+                            .AddSeconds(timeScheduled.TotalSeconds);
 
-                        nextDue =  nextDueDateTime - now;
+                        nextDue =  nextDueDateTime - lastDone;
 
                         break;
 

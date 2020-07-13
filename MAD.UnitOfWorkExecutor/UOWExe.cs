@@ -1,6 +1,7 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Runtime.CompilerServices;
+using System.Threading;
 using System.Threading.Tasks;
 
 [assembly: InternalsVisibleTo("MAD.UnitOfWorkExecutor.Tests")]
@@ -9,10 +10,13 @@ namespace MAD.UnitOfWorkExecutor
     public sealed class UOWExe
     {
         private readonly IServiceProvider serviceProvider;
+        private readonly CancellationTokenSource cancellationTokenSource;
 
         internal UOWExe(IServiceProvider serviceProvider)
         {
             this.serviceProvider = serviceProvider;
+
+            this.cancellationTokenSource = new CancellationTokenSource();
         }
 
         public async Task Start()
@@ -26,7 +30,6 @@ namespace MAD.UnitOfWorkExecutor
         public async Task Run()
         {
             await this.Start();
-            await Task.Delay(-1);
         }
 
         public async Task Stop()

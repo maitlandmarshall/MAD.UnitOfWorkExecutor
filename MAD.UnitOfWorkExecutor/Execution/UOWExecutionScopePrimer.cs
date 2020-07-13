@@ -6,11 +6,11 @@ using System;
 
 namespace MAD.UnitOfWorkExecutor.Execution
 {
-    internal class UOWDependencyInjectionScopePrimer
+    internal class UOWExecutionScopePrimer
     {
         private readonly ILifetimeScope lifetimeScope;
 
-        public UOWDependencyInjectionScopePrimer(ILifetimeScope lifetimeScope)
+        public UOWExecutionScopePrimer(ILifetimeScope lifetimeScope)
         {
             this.lifetimeScope = lifetimeScope;
         }

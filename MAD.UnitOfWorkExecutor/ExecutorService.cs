@@ -1,4 +1,5 @@
-﻿using MAD.UnitOfWorkExecutor.Execution;
+﻿using MAD.UnitOfWorkExecutor.Configuration;
+using MAD.UnitOfWorkExecutor.Execution;
 using MAD.UnitOfWorkExecutor.Schedule;
 using System;
 using System.Collections.Generic;
@@ -13,13 +14,18 @@ namespace MAD.UnitOfWorkExecutor
         private readonly UOWFromAssemblyPrimer unitOfWorkFromAssemblyPrimer;
         private readonly UOWExecutionHandler executionHandler;
         private readonly UOWScheduleFactory scheduleFactory;
+        private readonly UOWConfigurator configurator;
         private readonly IDictionary<Timer, UnitOfWork> unitOfWorkTimers;
 
-        public ExecutorService(UOWFromAssemblyPrimer unitOfWorkFromAssemblyPrimer, UOWExecutionHandler executionHandler, UOWScheduleFactory scheduleFactory)
+        public ExecutorService(UOWFromAssemblyPrimer unitOfWorkFromAssemblyPrimer,
+                               UOWExecutionHandler executionHandler,
+                               UOWScheduleFactory scheduleFactory,
+                               UOWConfigurator configurator)
         {
             this.unitOfWorkFromAssemblyPrimer = unitOfWorkFromAssemblyPrimer;
             this.executionHandler = executionHandler;
             this.scheduleFactory = scheduleFactory;
+            this.configurator = configurator;
             this.unitOfWorkTimers = new Dictionary<Timer, UnitOfWork>();
         }
 
@@ -35,6 +41,9 @@ namespace MAD.UnitOfWorkExecutor
 
         private Timer StartAndTrackTimerForUnitOfWork(UnitOfWork unitOfWork)
         {
+            // Load the UnitOfWork metadata, such as LastDoneDateTime
+            this.configurator.Load(unitOfWork);
+
             UOWSchedule schedule = this.scheduleFactory.Create(unitOfWork);
 
             Timer timer = new Timer(Math.Max(schedule.NextDue.TotalMilliseconds, 1))

@@ -1,12 +1,12 @@
 ﻿using Autofac;
 using Autofac.Extensions.DependencyInjection;
-using MAD.UnitOfWorkExecutor.Execution;
+using MAD.UnitOfWorkExecutor.Configuration;
 using MAD.UnitOfWorkExecutor.Execution;
 using MAD.UnitOfWorkExecutor.Schedule;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using System;
-using System.Collections.Generic;
-using System.Text;
+using System.Diagnostics;
+using System.IO;
 
 namespace MAD.UnitOfWorkExecutor
 {
@@ -18,17 +18,17 @@ namespace MAD.UnitOfWorkExecutor
 
         public UnitOfWorkExecutorBuilder ConfigureServices(ConfigureServicesCallback configureServices)
         {
-            configureServices?.Invoke(serviceDescriptors);
+            configureServices?.Invoke(this.serviceDescriptors);
 
             return this;
         }
 
         public UOWExe Build()
         {
-            this.ConfigureServices(serviceDescriptors);
+            this.ConfigureServices(this.serviceDescriptors);
 
             ContainerBuilder autofacContainerBuilder = new ContainerBuilder();
-            autofacContainerBuilder.Populate(serviceDescriptors);
+            autofacContainerBuilder.Populate(this.serviceDescriptors);
 
             return new UOWExe(new AutofacServiceProvider(autofacContainerBuilder.Build()));
         }
@@ -39,8 +39,24 @@ namespace MAD.UnitOfWorkExecutor
             serviceDescriptors.AddTransient<UOWFromAssemblyPrimer>();
             serviceDescriptors.AddTransient<UOWScheduleFactory>();
             serviceDescriptors.AddTransient<UOWExecutionHandler>();
-            serviceDescriptors.AddTransient<UOWDependencyInjectionScopePrimer>();
+            serviceDescriptors.AddTransient<UOWExecutionScopePrimer>();
             serviceDescriptors.AddTransient<UOWDependencyInjectionMethodInfoPrimer>();
+            serviceDescriptors.AddTransient<UOWInstanceConfigurator>();
+            serviceDescriptors.AddTransient<UOWConfigurator>();
+
+            string basePath = Path.GetDirectoryName(Process.GetCurrentProcess().MainModule.FileName);
+
+            ConfigurationBuilder configurationBuilder = new ConfigurationBuilder();
+            IConfigurationRoot configuration = configurationBuilder
+                .SetBasePath(basePath)
+                .AddJsonFile(
+                    path: "settings.json",
+                    optional: true,
+                    reloadOnChange: true
+                 )
+                .Build();
+
+            serviceDescriptors.AddSingleton<IConfiguration>(configuration);
         }
     }
 }

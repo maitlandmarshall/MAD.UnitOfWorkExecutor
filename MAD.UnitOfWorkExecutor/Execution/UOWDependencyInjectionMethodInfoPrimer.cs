@@ -3,7 +3,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using System.Text;
 
 namespace MAD.UnitOfWorkExecutor.Execution
 {
@@ -18,12 +17,12 @@ namespace MAD.UnitOfWorkExecutor.Execution
 
         public IEnumerable<object> Prime(MethodInfo methodInfo)
         {
-            var methodParams = methodInfo.GetParameters();
+            ParameterInfo[] methodParams = methodInfo.GetParameters();
 
             if (!methodParams.Any())
                 yield break;
 
-            foreach (var mp in methodParams)
+            foreach (ParameterInfo mp in methodParams)
             {
                 yield return this.serviceProvider.GetRequiredService(mp.ParameterType);
             }
