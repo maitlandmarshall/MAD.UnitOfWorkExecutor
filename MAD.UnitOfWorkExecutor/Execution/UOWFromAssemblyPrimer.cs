@@ -9,31 +9,30 @@ namespace MAD.UnitOfWorkExecutor.Execution
     {
         public IEnumerable<UnitOfWork> Prime(Assembly assembly)
         {
-            // Scan the entry assembly for any types or methods which use the UnitOfWorkAttribute
+            // Scan the entry assembly for any methods which use the UnitOfWorkAttribute
             IEnumerable<Type> exportedTypes = assembly.ExportedTypes;
 
             foreach (Type t in exportedTypes)
             {
-                var methodsWithAttribute = t
+                IEnumerable<UnitOfWork> result = t
                     .GetMethods()
                     .Where(y => y.GetCustomAttribute<UnitOfWorkAttribute>() != null)
-                    .Select(y => new
-                    {
-                        MethodInfo = y,
-                        UnitOfWorkAttributeData = y.GetCustomAttributesData()
-                            .Where(z => z.AttributeType == typeof(UnitOfWorkAttribute))
-                            .Select(y => y.NamedArguments
-                                .ToDictionary(
-                                    keySelector: keySelector => keySelector.MemberName,
-                                    elementSelector: elementSelector => elementSelector.TypedValue.Value
+                    .Select(y =>
+                        new UnitOfWork(
+                            ownerMethodInfo: y,
+                            attributeData: y.GetCustomAttributesData()
+                                .Where(z => z.AttributeType == typeof(UnitOfWorkAttribute))
+                                .Select(y => y.NamedArguments
+                                    .ToDictionary(
+                                        keySelector: keySelector => keySelector.MemberName,
+                                        elementSelector: elementSelector => elementSelector.TypedValue.Value
+                                        )
                                     )
-                                )
-                            .FirstOrDefault()
-                    });
+                                .FirstOrDefault()));
 
-                foreach (var m in methodsWithAttribute)
+                foreach (UnitOfWork uom in result)
                 {
-                    yield return new UnitOfWork(m.MethodInfo, m.UnitOfWorkAttributeData);
+                    yield return uom;
                 }
             }
         }

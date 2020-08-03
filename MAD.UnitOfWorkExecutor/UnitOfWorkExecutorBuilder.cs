@@ -44,13 +44,11 @@ namespace MAD.UnitOfWorkExecutor
             serviceDescriptors.AddTransient<UOWInstanceConfigurator>();
             serviceDescriptors.AddTransient<UOWConfigurator>();
 
-            string basePath = Path.GetDirectoryName(Process.GetCurrentProcess().MainModule.FileName);
-
             ConfigurationBuilder configurationBuilder = new ConfigurationBuilder();
             IConfigurationRoot configuration = configurationBuilder
-                .SetBasePath(basePath)
+                .SetBasePath(Globals.BasePath)
                 .AddJsonFile(
-                    path: "settings.json",
+                    path: Path.GetFileName(Globals.SettingsPath),
                     optional: true,
                     reloadOnChange: true
                  )
