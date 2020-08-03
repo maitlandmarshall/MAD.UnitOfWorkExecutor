@@ -8,14 +8,14 @@ namespace MAD.UnitOfWorkExecutor
 {
     public static class Globals
     {
-        public static string BasePath
+        public static string BaseDirectory
         {
-            get => Process.GetCurrentProcess().MainModule.FileName;
+            get => Path.GetDirectoryName(Process.GetCurrentProcess().MainModule.FileName);
         }
 
-        public static string SettingsPath
+        public static string SettingsDirectory
         {
-            get => Path.Combine(BasePath, "settings.json");
+            get => Path.Combine(BaseDirectory, "settings");
         }
     }
 }

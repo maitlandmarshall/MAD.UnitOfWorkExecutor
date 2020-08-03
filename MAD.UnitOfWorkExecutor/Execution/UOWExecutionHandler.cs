@@ -12,15 +12,15 @@ namespace MAD.UnitOfWorkExecutor.Execution
     {
         private readonly UOWExecutionScopePrimer dependencyInjectionScopePrimer;
         private readonly UOWDependencyInjectionMethodInfoPrimer dependencyInjectionMethodInfoPrimer;
-        private readonly UOWInstanceConfigurator instanceConfigurator;
+        private readonly UOWConfigurator configurator;
 
         public UOWExecutionHandler(UOWExecutionScopePrimer dependencyInjectionScopePrimer,
                                    UOWDependencyInjectionMethodInfoPrimer dependencyInjectionMethodInfoPrimer,
-                                   UOWInstanceConfigurator instanceConfigurator)
+                                   UOWConfigurator configurator)
         {
             this.dependencyInjectionScopePrimer = dependencyInjectionScopePrimer;
             this.dependencyInjectionMethodInfoPrimer = dependencyInjectionMethodInfoPrimer;
-            this.instanceConfigurator = instanceConfigurator;
+            this.configurator = configurator;
         }
 
         public async Task Handle(UnitOfWork unitOfWork)
@@ -31,6 +31,9 @@ namespace MAD.UnitOfWorkExecutor.Execution
             {
                 // Create an instance of the class containing the UnitOfWorkAttribute method, the DI container will resolve any constructor paramaters
                 object uowInstance = uowScope.GetRequiredService(unitOfWork.MethodInfo.DeclaringType);
+
+                // Load metadata for the unit of work instance
+                this.configurator.Load(unitOfWork, uowInstance);
 
                 // Generate a param array to pass through to the method. This will also automatically resolve any dependencies on the method.
                 IEnumerable<object> uowMethodInfoParams = this.dependencyInjectionMethodInfoPrimer.Prime(unitOfWork.MethodInfo);

@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Newtonsoft.Json;
+using System;
 using System.Collections.Generic;
 using System.Reflection;
 
@@ -6,8 +7,11 @@ namespace MAD.UnitOfWorkExecutor
 {
     internal class UnitOfWork
     {
-        public readonly MethodInfo MethodInfo;
-        public readonly UnitOfWorkAttribute Attribute;
+        [JsonIgnore]
+        public MethodInfo MethodInfo { get; }
+
+        [JsonIgnore]
+        public UnitOfWorkAttribute Attribute { get; }
 
         public DateTime? LastRunDateTime { get; set; }
 

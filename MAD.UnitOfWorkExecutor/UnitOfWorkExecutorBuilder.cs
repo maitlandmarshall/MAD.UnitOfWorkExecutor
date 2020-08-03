@@ -7,6 +7,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 
 namespace MAD.UnitOfWorkExecutor
 {
@@ -36,25 +37,13 @@ namespace MAD.UnitOfWorkExecutor
         private void ConfigureServices(IServiceCollection serviceDescriptors)
         {
             serviceDescriptors.AddTransient<ExecutorService>();
+            serviceDescriptors.AddTransient<UnitOfWorkFactory>();
             serviceDescriptors.AddTransient<UOWFromAssemblyPrimer>();
             serviceDescriptors.AddTransient<UOWScheduleFactory>();
             serviceDescriptors.AddTransient<UOWExecutionHandler>();
             serviceDescriptors.AddTransient<UOWExecutionScopePrimer>();
             serviceDescriptors.AddTransient<UOWDependencyInjectionMethodInfoPrimer>();
-            serviceDescriptors.AddTransient<UOWInstanceConfigurator>();
             serviceDescriptors.AddTransient<UOWConfigurator>();
-
-            ConfigurationBuilder configurationBuilder = new ConfigurationBuilder();
-            IConfigurationRoot configuration = configurationBuilder
-                .SetBasePath(Globals.BasePath)
-                .AddJsonFile(
-                    path: Path.GetFileName(Globals.SettingsPath),
-                    optional: true,
-                    reloadOnChange: true
-                 )
-                .Build();
-
-            serviceDescriptors.AddSingleton<IConfiguration>(configuration);
         }
     }
 }

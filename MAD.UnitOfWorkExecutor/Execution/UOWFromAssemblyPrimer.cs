@@ -7,6 +7,13 @@ namespace MAD.UnitOfWorkExecutor.Execution
 {
     internal class UOWFromAssemblyPrimer
     {
+        private readonly UnitOfWorkFactory unitOfWorkFactory;
+
+        public UOWFromAssemblyPrimer(UnitOfWorkFactory unitOfWorkFactory)
+        {
+            this.unitOfWorkFactory = unitOfWorkFactory;
+        }
+
         public IEnumerable<UnitOfWork> Prime(Assembly assembly)
         {
             // Scan the entry assembly for any methods which use the UnitOfWorkAttribute
@@ -17,18 +24,7 @@ namespace MAD.UnitOfWorkExecutor.Execution
                 IEnumerable<UnitOfWork> result = t
                     .GetMethods()
                     .Where(y => y.GetCustomAttribute<UnitOfWorkAttribute>() != null)
-                    .Select(y =>
-                        new UnitOfWork(
-                            ownerMethodInfo: y,
-                            attributeData: y.GetCustomAttributesData()
-                                .Where(z => z.AttributeType == typeof(UnitOfWorkAttribute))
-                                .Select(y => y.NamedArguments
-                                    .ToDictionary(
-                                        keySelector: keySelector => keySelector.MemberName,
-                                        elementSelector: elementSelector => elementSelector.TypedValue.Value
-                                        )
-                                    )
-                                .FirstOrDefault()));
+                    .Select(y => this.unitOfWorkFactory.Create(y));
 
                 foreach (UnitOfWork uom in result)
                 {

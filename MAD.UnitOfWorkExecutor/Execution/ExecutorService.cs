@@ -7,7 +7,7 @@ using System.Reflection;
 using System.Threading.Tasks;
 using System.Timers;
 
-namespace MAD.UnitOfWorkExecutor
+namespace MAD.UnitOfWorkExecutor.Execution
 {
     internal sealed class ExecutorService
     {
