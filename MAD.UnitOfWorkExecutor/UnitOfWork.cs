@@ -5,16 +5,8 @@ using System.Reflection;
 
 namespace MAD.UnitOfWorkExecutor
 {
-    internal class UnitOfWork
+    public class UnitOfWork
     {
-        [JsonIgnore]
-        public MethodInfo MethodInfo { get; }
-
-        [JsonIgnore]
-        public UnitOfWorkAttribute Attribute { get; }
-
-        public DateTime? LastRunDateTime { get; set; }
-
         public UnitOfWork(MethodInfo ownerMethodInfo, IDictionary<string, object> attributeData)
         {
             this.MethodInfo = ownerMethodInfo;
@@ -27,5 +19,15 @@ namespace MAD.UnitOfWorkExecutor
                     ?.SetValue(this.Attribute, kvp.Value);
             }
         }
+
+        internal IEnumerable<UnitOfWork> Children { get; set; }
+
+        [JsonIgnore]
+        public MethodInfo MethodInfo { get; }
+
+        [JsonIgnore]
+        public UnitOfWorkAttribute Attribute { get; }
+
+        public DateTime? LastRunDateTime { get; set; }
     }
 }

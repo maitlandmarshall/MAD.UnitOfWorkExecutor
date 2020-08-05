@@ -1,21 +1,22 @@
 ﻿using MAD.UnitOfWorkExecutor.Configuration;
-using MAD.UnitOfWorkExecutor.Execution;
 using MAD.UnitOfWorkExecutor.Schedule;
+using Microsoft.Extensions.Hosting;
 using System;
 using System.Collections.Generic;
 using System.Reflection;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Timers;
 
 namespace MAD.UnitOfWorkExecutor.Execution
 {
-    internal sealed class ExecutorService
+    internal sealed class ExecutorService : BackgroundService
     {
         private readonly UOWFromAssemblyPrimer unitOfWorkFromAssemblyPrimer;
         private readonly UOWExecutionHandler executionHandler;
         private readonly UOWScheduleFactory scheduleFactory;
         private readonly UOWConfigurator configurator;
-        private readonly IDictionary<Timer, UnitOfWork> unitOfWorkTimers;
+        private readonly IDictionary<System.Timers.Timer, UnitOfWork> unitOfWorkTimers;
 
         public ExecutorService(UOWFromAssemblyPrimer unitOfWorkFromAssemblyPrimer,
                                UOWExecutionHandler executionHandler,
@@ -26,10 +27,10 @@ namespace MAD.UnitOfWorkExecutor.Execution
             this.executionHandler = executionHandler;
             this.scheduleFactory = scheduleFactory;
             this.configurator = configurator;
-            this.unitOfWorkTimers = new Dictionary<Timer, UnitOfWork>();
+            this.unitOfWorkTimers = new Dictionary<System.Timers.Timer, UnitOfWork>();
         }
 
-        public async Task Start()
+        protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
             IEnumerable<UnitOfWork> unitOfWorks = this.unitOfWorkFromAssemblyPrimer.Prime(Assembly.GetEntryAssembly());
 
@@ -39,14 +40,14 @@ namespace MAD.UnitOfWorkExecutor.Execution
             }
         }
 
-        private Timer StartAndTrackTimerForUnitOfWork(UnitOfWork unitOfWork)
+        private System.Timers.Timer StartAndTrackTimerForUnitOfWork(UnitOfWork unitOfWork)
         {
             // Load the UnitOfWork metadata, such as LastDoneDateTime
             this.configurator.Load(unitOfWork);
 
             UOWSchedule schedule = this.scheduleFactory.Create(unitOfWork);
 
-            Timer timer = new Timer(Math.Max(schedule.NextDue.TotalMilliseconds, 1))
+            System.Timers.Timer timer = new System.Timers.Timer(Math.Max(schedule.NextDue.TotalMilliseconds, 1))
             {
                 AutoReset = false
             };
@@ -61,7 +62,7 @@ namespace MAD.UnitOfWorkExecutor.Execution
 
         private async void Timer_Elapsed(object sender, ElapsedEventArgs e)
         {
-            Timer timer = sender as Timer;
+            System.Timers.Timer timer = sender as System.Timers.Timer;
             UnitOfWork unitOfWork = this.unitOfWorkTimers[timer];
 
             timer.Dispose();

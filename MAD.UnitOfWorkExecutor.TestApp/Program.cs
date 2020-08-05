@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Microsoft.Extensions.Hosting;
+using System;
 
 namespace MAD.UnitOfWorkExecutor.TestApp
 {
@@ -6,7 +7,7 @@ namespace MAD.UnitOfWorkExecutor.TestApp
     {
         static void Main(string[] args)
         {
-            new UnitOfWorkExecutorBuilder().Build().Run().Wait();
+            UOWHost.CreateDefaultHostBuilder<Startup>().Build().Run();
         }
     }
 }

@@ -28,7 +28,7 @@ namespace MAD.UnitOfWorkExecutor.Schedule
                         break;
 
                     case UnitOfWorkType.Timed:
-                        nextDue = TimeSpan.FromSeconds(uow.Attribute.RunEverySeconds);
+                        nextDue = TimeSpan.FromSeconds(uow.Attribute.RunEverySeconds.Value);
                         break;
 
                     default: throw new NotImplementedException();

@@ -11,15 +11,17 @@ namespace MAD.UnitOfWorkExecutor
         {
             get
             {
-                if (string.IsNullOrEmpty(this.RunAtTime))
+                if (!string.IsNullOrEmpty(this.RunAtTime))
+                    return UnitOfWorkType.Scheduled;
+                else if (this.RunEverySeconds.HasValue)
                     return UnitOfWorkType.Timed;
-
-                return UnitOfWorkType.Scheduled;
+                else
+                    return UnitOfWorkType.Reactive;
             }
         }
 
         // Timed
-        public int RunEverySeconds { get; set; } = 5;
+        public int? RunEverySeconds { get; set; }
 
         // Scheduled
         /// <summary>
