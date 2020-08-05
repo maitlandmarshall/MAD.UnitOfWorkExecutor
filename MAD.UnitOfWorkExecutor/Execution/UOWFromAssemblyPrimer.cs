@@ -19,7 +19,7 @@ namespace MAD.UnitOfWorkExecutor.Execution
         {
             IEnumerable<UnitOfWork> assemblyUnitsOfWork = this.GetUnitOfWorksInAssembly(assembly);
 
-            foreach (var uom in assemblyUnitsOfWork)
+            foreach (UnitOfWork uom in assemblyUnitsOfWork)
             {
                 uom.Children = this.GetDependentUnitOfWorks(uom, assemblyUnitsOfWork);
 
@@ -39,7 +39,7 @@ namespace MAD.UnitOfWorkExecutor.Execution
                     .Where(y => y.GetCustomAttribute<UnitOfWorkAttribute>() != null)
                     .Select(y => this.unitOfWorkFactory.Create(y));
 
-                foreach (var uom in result)
+                foreach (UnitOfWork uom in result)
                 {
                     yield return uom;
                 }
@@ -50,31 +50,30 @@ namespace MAD.UnitOfWorkExecutor.Execution
         {
             // Does this UnitOfWork return anything important?
             Type returnType = parent.MethodInfo.ReturnType;
-            bool isTask = typeof(Task).IsAssignableFrom(returnType);
 
-            if (isTask && returnType.GenericTypeArguments.Length > 0)
+            if (typeof(Task).IsAssignableFrom(returnType))
             {
                 // It is a Task<Something>
                 // Set returnType to <Something>
-                returnType = returnType.GenericTypeArguments.First();
-            }
-            else if (isTask)
-            {
+                if (returnType.GenericTypeArguments.Length > 0)
+                    returnType = returnType.GenericTypeArguments.First();
+
                 // If it's just a normal task, ignore it
-                returnType = null;
+                else
+                    returnType = null;
             }
 
             if (returnType is null)
                 yield break;
 
             // Search for UnitOfWorks which accept this returnType as a method parameter or class parameter
-            var dependants = allUnitOfWorks
+            IEnumerable<UnitOfWork> dependants = allUnitOfWorks
                 .Where(y => y != parent)
-                .Where(y => 
+                .Where(y =>
                     y.MethodInfo.GetParameters().Any(param => returnType.IsAssignableFrom(param.ParameterType))
                     || y.MethodInfo.DeclaringType.GetConstructors().Any(constructor => constructor.GetParameters().Any(constParam => returnType.IsAssignableFrom(constParam.ParameterType))));
 
-            foreach (var p in dependants)
+            foreach (UnitOfWork p in dependants)
             {
                 yield return p;
             }

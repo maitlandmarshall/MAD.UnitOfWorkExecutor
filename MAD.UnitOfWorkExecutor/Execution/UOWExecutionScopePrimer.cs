@@ -15,14 +15,16 @@ namespace MAD.UnitOfWorkExecutor.Execution
             this.lifetimeScope = lifetimeScope;
         }
 
-        public IServiceProvider Prime(UnitOfWork work)
+        public IServiceProvider Prime(UnitOfWork work, Action<ContainerBuilder> configureServices = null)
         {
             ILifetimeScope uowScope = this.lifetimeScope.BeginLifetimeScope(work.MethodInfo.Name, config =>
             {
                 IServiceCollection serviceDescriptors = new ServiceCollection();
-                this.ConfigureServices(work, serviceDescriptors);
 
+                this.ConfigureServices(work, serviceDescriptors);
                 config.Populate(serviceDescriptors);
+
+                configureServices?.Invoke(config);
             });
 
             return uowScope as IServiceProvider;

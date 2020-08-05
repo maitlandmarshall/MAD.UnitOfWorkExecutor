@@ -1,4 +1,5 @@
-﻿using MAD.UnitOfWorkExecutor.Configuration;
+﻿using Autofac;
+using MAD.UnitOfWorkExecutor.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Collections.Generic;
@@ -10,17 +11,14 @@ namespace MAD.UnitOfWorkExecutor.Execution
     internal class UOWExecutionHandler
     {
         private readonly UOWExecutionScopePrimer dependencyInjectionScopePrimer;
-        private readonly UOWDependencyInjectionMethodInfoPrimer dependencyInjectionMethodInfoPrimer;
         private readonly UOWConfigurator configurator;
         private readonly IUOWApplication application;
 
         public UOWExecutionHandler(UOWExecutionScopePrimer dependencyInjectionScopePrimer,
-                                   UOWDependencyInjectionMethodInfoPrimer dependencyInjectionMethodInfoPrimer,
                                    UOWConfigurator configurator,
                                    IUOWApplication application)
         {
             this.dependencyInjectionScopePrimer = dependencyInjectionScopePrimer;
-            this.dependencyInjectionMethodInfoPrimer = dependencyInjectionMethodInfoPrimer;
             this.configurator = configurator;
             this.application = application;
         }
@@ -39,7 +37,7 @@ namespace MAD.UnitOfWorkExecutor.Execution
             }
         }
 
-        private async Task ExecuteMiddlewareChain(UnitOfWork unitOfWork, IServiceProvider uowScope, int middlewareIndex = 0) 
+        private async Task ExecuteMiddlewareChain(UnitOfWork unitOfWork, IServiceProvider uowScope, int middlewareIndex = 0)
         {
             if (middlewareIndex >= this.application.Middlewares.Count)
             {
@@ -51,7 +49,7 @@ namespace MAD.UnitOfWorkExecutor.Execution
 
                 await mw.Invoke(new UOWExecutionContext { Services = uowScope, UnitOfWork = unitOfWork }, async () =>
                  {
-                     await ExecuteMiddlewareChain(unitOfWork, uowScope, middlewareIndex + 1);
+                     await this.ExecuteMiddlewareChain(unitOfWork, uowScope, middlewareIndex + 1);
                  });
             }
         }
@@ -65,13 +63,57 @@ namespace MAD.UnitOfWorkExecutor.Execution
             this.configurator.Load(unitOfWork, uowInstance);
 
             // Generate a param array to pass through to the method. This will also automatically resolve any dependencies on the method.
-            IEnumerable<object> uowMethodInfoParams = this.dependencyInjectionMethodInfoPrimer.Prime(unitOfWork.MethodInfo);
+            UOWDependencyInjectionMethodInfoPrimer methodInjectionPrimer = uowScope.GetRequiredService<UOWDependencyInjectionMethodInfoPrimer>();
+            IEnumerable<object> uowMethodInfoParams = methodInjectionPrimer.Prime(unitOfWork.MethodInfo);
 
             // Execute the method with the params
             object result = unitOfWork.MethodInfo.Invoke(uowInstance, uowMethodInfoParams.ToArray());
+            Type resultType = result?.GetType();
 
             if (result is Task task)
+            {
+                Type taskType = task.GetType();
+
                 await task;
+
+                // The task can have a result
+                if (taskType.IsGenericType)
+                {
+                    result = taskType.GetProperty(nameof(Task<object>.Result)).GetValue(task);
+                    resultType = taskType.GenericTypeArguments.FirstOrDefault();
+                }
+
+                // The task has no result
+                else
+                {
+                    result = null;
+                    resultType = null;
+                }
+            }
+            if (result is null)
+                return;
+
+            await this.ExecuteDependentUnitsOfWork(unitOfWork, resultType, result, uowScope);
+        }
+
+        private async Task ExecuteDependentUnitsOfWork(UnitOfWork parent, Type parentOutputType, object parentOutput, IServiceProvider uowScope)
+        {
+            if (parent.Children is null)
+                return;
+
+            foreach (UnitOfWork child in parent.Children)
+            {
+                IServiceProvider childScope = this.dependencyInjectionScopePrimer.Prime(child, childServices => childServices.RegisterInstance(parentOutput).As(parentOutputType));
+
+                try
+                {
+                    await this.ExecuteMiddlewareChain(child, childScope);
+                }
+                finally
+                {
+                    (childScope as IDisposable)?.Dispose();
+                }
+            }
         }
     }
 }
