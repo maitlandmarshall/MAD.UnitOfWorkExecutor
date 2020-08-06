@@ -12,11 +12,11 @@ namespace MAD.UnitOfWorkExecutor.Execution
     {
         private readonly UOWExecutionScopePrimer dependencyInjectionScopePrimer;
         private readonly UOWConfigurator configurator;
-        private readonly IUOWApplication application;
+        private readonly UOWApplication application;
 
         public UOWExecutionHandler(UOWExecutionScopePrimer dependencyInjectionScopePrimer,
                                    UOWConfigurator configurator,
-                                   IUOWApplication application)
+                                   UOWApplication application)
         {
             this.dependencyInjectionScopePrimer = dependencyInjectionScopePrimer;
             this.configurator = configurator;
@@ -29,7 +29,7 @@ namespace MAD.UnitOfWorkExecutor.Execution
 
             try
             {
-                await this.ExecuteMiddlewareChain(unitOfWork, uowScope);
+                await this.ExecuteMiddlewarePipeline(unitOfWork, uowScope);
             }
             finally
             {
@@ -37,7 +37,7 @@ namespace MAD.UnitOfWorkExecutor.Execution
             }
         }
 
-        private async Task ExecuteMiddlewareChain(UnitOfWork unitOfWork, IServiceProvider uowScope, int middlewareIndex = 0)
+        private async Task ExecuteMiddlewarePipeline(UnitOfWork unitOfWork, IServiceProvider uowScope, int middlewareIndex = 0)
         {
             if (middlewareIndex >= this.application.Middlewares.Count)
             {
@@ -45,11 +45,11 @@ namespace MAD.UnitOfWorkExecutor.Execution
             }
             else
             {
-                IUOWApplication.MiddlewareCallback mw = this.application.Middlewares.ElementAt(middlewareIndex);
+                UOWApplication.MiddlewareCallback mw = this.application.Middlewares.ElementAt(middlewareIndex);
 
                 await mw.Invoke(new UOWExecutionContext { Services = uowScope, UnitOfWork = unitOfWork }, async () =>
                  {
-                     await this.ExecuteMiddlewareChain(unitOfWork, uowScope, middlewareIndex + 1);
+                     await this.ExecuteMiddlewarePipeline(unitOfWork, uowScope, middlewareIndex + 1);
                  });
             }
         }
@@ -90,13 +90,18 @@ namespace MAD.UnitOfWorkExecutor.Execution
                     resultType = null;
                 }
             }
+
+            // The unit of work has finished executing successfully.
+            //unitOfWork.LastRunDateTime = DateTime.Now;
+            //this.configurator.Save(unitOfWork, uowInstance);
+
             if (result is null)
                 return;
 
-            await this.ExecuteDependentUnitsOfWork(unitOfWork, resultType, result, uowScope);
+            await this.ExecuteDependentUnitsOfWork(unitOfWork, resultType, result);
         }
 
-        private async Task ExecuteDependentUnitsOfWork(UnitOfWork parent, Type parentOutputType, object parentOutput, IServiceProvider uowScope)
+        private async Task ExecuteDependentUnitsOfWork(UnitOfWork parent, Type parentOutputType, object parentOutput)
         {
             if (parent.Children is null)
                 return;
@@ -107,7 +112,7 @@ namespace MAD.UnitOfWorkExecutor.Execution
 
                 try
                 {
-                    await this.ExecuteMiddlewareChain(child, childScope);
+                    await this.ExecuteMiddlewarePipeline(child, childScope);
                 }
                 finally
                 {

@@ -12,27 +12,41 @@ namespace MAD.UnitOfWorkExecutor.Execution
 {
     internal sealed class ExecutorService : BackgroundService
     {
-        private readonly UOWFromAssemblyPrimer unitOfWorkFromAssemblyPrimer;
+        private readonly UnitOfWorkResolver unitOfWorkFromAssemblyPrimer;
         private readonly UOWExecutionHandler executionHandler;
         private readonly UOWScheduleFactory scheduleFactory;
         private readonly UOWConfigurator configurator;
+        private readonly UOWApplication application;
+        private readonly IServiceProvider serviceProvider;
         private readonly IDictionary<System.Timers.Timer, UnitOfWork> unitOfWorkTimers;
 
-        public ExecutorService(UOWFromAssemblyPrimer unitOfWorkFromAssemblyPrimer,
+        public ExecutorService(UnitOfWorkResolver unitOfWorkFromAssemblyPrimer,
                                UOWExecutionHandler executionHandler,
                                UOWScheduleFactory scheduleFactory,
-                               UOWConfigurator configurator)
+                               UOWConfigurator configurator,
+                               UOWApplication application,
+                               IServiceProvider serviceProvider)
         {
             this.unitOfWorkFromAssemblyPrimer = unitOfWorkFromAssemblyPrimer;
             this.executionHandler = executionHandler;
             this.scheduleFactory = scheduleFactory;
             this.configurator = configurator;
+            this.application = application;
+            this.serviceProvider = serviceProvider;
             this.unitOfWorkTimers = new Dictionary<System.Timers.Timer, UnitOfWork>();
+        }
+
+        public override Task StartAsync(CancellationToken cancellationToken)
+        {
+            this.application.ApplicationServices = this.serviceProvider;
+            this.application.Startup?.Configure(this.application);
+
+            return base.StartAsync(cancellationToken);
         }
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
-            IEnumerable<UnitOfWork> unitOfWorks = this.unitOfWorkFromAssemblyPrimer.Prime(Assembly.GetEntryAssembly());
+            IEnumerable<UnitOfWork> unitOfWorks = this.unitOfWorkFromAssemblyPrimer.Resolve(Assembly.GetEntryAssembly());
 
             foreach (UnitOfWork uow in unitOfWorks)
             {

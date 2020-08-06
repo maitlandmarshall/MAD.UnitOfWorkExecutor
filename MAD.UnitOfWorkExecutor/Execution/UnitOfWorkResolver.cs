@@ -6,18 +6,18 @@ using System.Threading.Tasks;
 
 namespace MAD.UnitOfWorkExecutor.Execution
 {
-    internal class UOWFromAssemblyPrimer
+    internal class UnitOfWorkResolver
     {
         private readonly UnitOfWorkFactory unitOfWorkFactory;
 
-        public UOWFromAssemblyPrimer(UnitOfWorkFactory unitOfWorkFactory)
+        public UnitOfWorkResolver(UnitOfWorkFactory unitOfWorkFactory)
         {
             this.unitOfWorkFactory = unitOfWorkFactory;
         }
 
-        public IEnumerable<UnitOfWork> Prime(Assembly assembly)
+        public IEnumerable<UnitOfWork> Resolve(Assembly assembly)
         {
-            IEnumerable<UnitOfWork> assemblyUnitsOfWork = this.GetUnitOfWorksInAssembly(assembly);
+            IEnumerable<UnitOfWork> assemblyUnitsOfWork = this.GetUnitOfWorksInAssembly(assembly).ToArray();
 
             foreach (UnitOfWork uom in assemblyUnitsOfWork)
             {

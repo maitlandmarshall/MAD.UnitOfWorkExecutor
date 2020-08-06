@@ -98,7 +98,7 @@ namespace MAD.UnitOfWorkExecutor.Configuration
 
         private string GetFilePath(UnitOfWork unitOfWork)
         {
-            return Path.Combine(Globals.SettingsDirectory, $"{unitOfWork.MethodInfo.DeclaringType.Name}.cs");
+            return Path.Combine(Globals.SettingsDirectory, $"{unitOfWork.MethodInfo.DeclaringType.Name}.json");
         }
     }
 }

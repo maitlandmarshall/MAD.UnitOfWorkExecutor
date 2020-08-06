@@ -25,17 +25,17 @@ namespace MAD.UnitOfWorkExecutor
         private static IHostBuilder CreateDefaultHostBuilder(Type startupType)
         {
             // Define the root application builder, used for defining middleware and other application components
-            UOWApplicationBuilder applicationBuilder = new UOWApplicationBuilder();
+            UOWApplication applicationBuilder = new UOWApplication();
             AutofacServiceProviderFactory autofacServiceProviderFactory = new AutofacServiceProviderFactory();
 
             // Create a root serviceProvider and add the Startup type into the container
             ServiceCollection serviceDescriptors = new ServiceCollection();
-            serviceDescriptors.AddSingleton<IUOWApplication>(applicationBuilder);
+            serviceDescriptors.AddSingleton<UOWApplication>(applicationBuilder);
 
             ContainerBuilder builder = autofacServiceProviderFactory.CreateBuilder(serviceDescriptors);
 
             if (startupType != null)
-                builder.RegisterType(startupType).SingleInstance().AsSelf();
+                builder.RegisterType(startupType).SingleInstance().AsSelf().As<UOWStartup>();
 
             IServiceProvider rootServiceProvider = autofacServiceProviderFactory.CreateServiceProvider(builder);
 
@@ -54,7 +54,7 @@ namespace MAD.UnitOfWorkExecutor
 
                 // Startup may register some dependencies
                 appHostBuilder.ConfigureServices(startup.ConfigureServices);
-                startup.Configure(applicationBuilder);
+                applicationBuilder.Startup = startup;
             }
 
             return appHostBuilder;
@@ -65,7 +65,7 @@ namespace MAD.UnitOfWorkExecutor
             serviceDescriptors.AddHostedService<ExecutorService>();
 
             serviceDescriptors.AddTransient<UnitOfWorkFactory>();
-            serviceDescriptors.AddTransient<UOWFromAssemblyPrimer>();
+            serviceDescriptors.AddTransient<UnitOfWorkResolver>();
             serviceDescriptors.AddTransient<UOWScheduleFactory>();
             serviceDescriptors.AddTransient<UOWExecutionHandler>();
             serviceDescriptors.AddTransient<UOWExecutionScopePrimer>();

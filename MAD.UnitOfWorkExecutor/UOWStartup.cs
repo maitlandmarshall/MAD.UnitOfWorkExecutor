@@ -7,7 +7,7 @@ namespace MAD.UnitOfWorkExecutor
 {
     public abstract class UOWStartup
     {
-        public virtual void Configure(UOWApplicationBuilder applicationBuilder)
+        public virtual void Configure(UOWApplication application)
         {
 
         }
